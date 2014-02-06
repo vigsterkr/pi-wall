@@ -31,7 +31,7 @@ class Player(object):
 
 	
 	def get_pipeline(self):
-		return Gst.parse_launch('filesrc location={0} ! '.format(self._filepath) + 'decodebin ! autovideosink')
+		return Gst.parse_launch('filesrc location={0} ! '.format(self._filepath) + 'decodebin name=demux demux. ! eglglessink demux. ! alsasink')
 
 
 	def on_bus_msg(self, bus, msg):
