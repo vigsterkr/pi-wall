@@ -114,7 +114,7 @@ if __name__ == '__main__':
 		player = MasterPlayer(sys.argv[2], 11111)
 		print("base_time={0}".format(player.base_time))
 	elif sys.argv[1] == 'slave':
-		player = SlavePlayer(sys.argv[2], 20000, int(sys.argv[3]))
+		player = SlavePlayer(sys.argv[2], sys.argv[3], 11111, int(sys.argv[4]))
 		slave.player.base_time = int(sys.argv[3])
 	else:
 		player = Player(sys.argv[1])
