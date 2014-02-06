@@ -40,13 +40,9 @@ class Player(object):
 			return
 		elif msg.type is Gst.MessageType.SEGMENT_DONE: 
 			self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.SEGMENT, 0)
-		elif msg.type is Gst.MessageType.EOS:
-			self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, 0)
 		elif msg.type is Gst.MessageType.ASYNC_DONE:
 			if self._prerolling:
-				print "prerolling"
-				#self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.SEGMENT, 0)
-				self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, 0)
+				self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.SEGMENT, 0)
 				self.player.set_state(Gst.State.PLAYING)
 				self._prerolling = False
 		elif msg.type is Gst.MessageType.ERROR:
