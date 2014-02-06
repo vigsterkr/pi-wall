@@ -95,9 +95,9 @@ class SlavePlayer(Player):
 		super(SlavePlayer, self).__init__(filepath)
 		self._ip = ip
         	self._port = port
-        	self._base_time = base_time
-
+		self.base_time = base_time
 	
+
 	@property
 	def base_time(self):
 		return self._base_time
@@ -121,7 +121,6 @@ if __name__ == '__main__':
 		print("base_time={0}".format(player.base_time))
 	elif sys.argv[1] == 'slave':
 		player = SlavePlayer(sys.argv[2], sys.argv[3], 11111, int(sys.argv[4]))
-		player.base_time = int(sys.argv[4])
 	else:
 		player = Player(sys.argv[1])
 

@@ -4,6 +4,7 @@ import struct
 import time
 from socket import *
 import threading
+from player import *
 
 UDP_PORT = 31337 
 
@@ -30,23 +31,22 @@ class MasterServerThread(threading.Thread):
 
 class SlaveThread(threading.Thread):
 	def __init__(self, filepath, bcast_addr):
-		super(SlaveControllerThread, self).__init__()
+		super(SlaveThread, self).__init__()
 		self.filepath = filepath
 
-        	self.master_server = None
         	self.slave = None
         	self.running = True
 		
-		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.sock = socket(AF_INET, SOCK_DGRAM)
 		self.sock.bind((bcast_addr, UDP_PORT))
 	
 
 	def run(self):
 		while self.running:
-			data, addr = sock.recvfrom(100)
+			data, addr = self.sock.recvfrom(100)
 			base_time, port = struct.unpack('!Qi', data)
 			ip = addr[0]
-			print base_time, ip, port
+#			print base_time, ip, port
 			
 			if self.slave is None:
 				self.slave = SlavePlayer(self.filepath, ip, port, base_time) 
@@ -54,9 +54,6 @@ class SlaveThread(threading.Thread):
 				print("base time does not match, restarting...")
 				self.slave.stop()
 				self.slave = SlavePlayer(self.filepath, ip, port, base_time)
-
-
-			time.sleep(10)
 
 
 	def stop_player(self):
