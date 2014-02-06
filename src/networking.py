@@ -15,12 +15,17 @@ class MasterServerThread(threading.Thread):
         self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 	self.bcast_addr = bcast_addr
+	self.running = True
 
     def run(self):
-	while True:
+	while self.running:
 		msg = struct.pack("!Qi", self.master_player.base_time, self.master_player.port)
         	self.sock.sendto(msg, (self.bcast_addr, UDP_PORT))
         	time.sleep(1)
+
+    def stop(self):
+	self.master_player.stop()
+	self.running = False
 
 
 class SlaveThread(threading.Thread):

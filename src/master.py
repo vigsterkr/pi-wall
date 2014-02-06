@@ -13,6 +13,6 @@ if __name__ == "__main__":
 	try:
 		GObject.MainLoop().run()
 	except KeyboardInterrupt:
-		player.stop()
+		ms.stop()
 		sys.exit(1)
 
