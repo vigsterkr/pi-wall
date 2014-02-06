@@ -16,7 +16,7 @@ if __name__ == "__main__":
 		f.close()
 	
 		if config['type'] == 'master':
-			player = MasterPlayer(config['movie_file'], int(config['master_port'))
+			player = MasterPlayer(config['movie_file'], int(config['master_port']))
 			ms = MasterServerThread(player, config['bcast_addr'])
 			ms.start()
 
