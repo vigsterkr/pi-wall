@@ -10,7 +10,7 @@ Gst.init(None)
 class Player(object):
 	def __init__(self, filepath):
 		self._filepath = filepath
-		self.player = get_pipeline()
+		self.player = self.get_pipeline()
 
 		self.bus = self.player.get_bus()
 		self.bus.add_signal_watch()
@@ -112,7 +112,7 @@ class SlavePlayer(Player):
 
 
 if __name__ == '__main__':
-	from gi.repository import GObject
+	import sys
 
 	player = MasterPlayer(sys.argv[1], 11111)
 
