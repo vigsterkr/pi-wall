@@ -18,7 +18,6 @@ class Player(object):
 		
 		self._loop = False
 		
-		#self.player.props.uri = "file:///home/pi/Park_720p.mp4"
 		self.player.set_state(Gst.State.PAUSED)
 		
 		# bug ? as i get -1 for the standard
@@ -109,8 +108,16 @@ class SlavePlayer(Player):
 
 if __name__ == '__main__':
 	import sys
+	print sys.argv[1]
 
-	player = MasterPlayer(sys.argv[1], 11111)
+	if sys.argv[1] == 'master':
+		player = MasterPlayer(sys.argv[2], 11111)
+		print("base_time={0}".format(player.base_time))
+	elif sys.argv[1] == 'slave':
+		player = SlavePlayer(sys.argv[2], 20000, int(sys.argv[3]))
+		slave.player.base_time = int(sys.argv[3])
+	else:
+		player = Player(sys.argv[1])
 
 	GObject.MainLoop().run()
 
