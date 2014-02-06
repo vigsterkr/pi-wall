@@ -1,19 +1,18 @@
 #!/usr/bin/env python
 
 import sys
-from player import Player
+from player import * 
 from gi.repository import GObject
 from networking import *
 
 if __name__ == "__main__":
-	loop = GObject.MainLoop()
-	player = Player()
-	player.play("file:///home/pi/Park_720p.mp4")
-	player.loop = True
-	base_time = player.set_master(11111)
-	broadcast_base_time(base_time)
+	player = MasterPlayer(sys.argv[1], int(sys.argv[2]))
+	ms = MasterServerThread(player, sys.argv[3])
+	ms.start()
+
 	try:
-		loop.run()
+		GObject.MainLoop().run()
 	except KeyboardInterrupt:
+		player.stop()
 		sys.exit(1)
 

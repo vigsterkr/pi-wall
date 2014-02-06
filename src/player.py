@@ -72,9 +72,10 @@ class MasterPlayer(Player):
 	def __init__(self, filepath, port):
 		super(MasterPlayer, self).__init__(filepath)
 		
+		self._port = port
 		self._clock = self.player.get_clock()
 		self.player.use_clock(self._clock)
-		self._clock_provider = GstNet.NetTimeProvider.new(self._clock, None, port)
+		self._clock_provider = GstNet.NetTimeProvider.new(self._clock, None, self._port)
 		self._base_time = self._clock.get_time()
 		self.player.set_start_time(self.GST_CLOCK_TIME_NONE)
 		self.player.set_base_time(self._base_time)
@@ -82,6 +83,11 @@ class MasterPlayer(Player):
 	@property
 	def base_time(self):
 		return self._base_time
+
+
+	@property
+	def port(self):
+		return self._port
 
 
 class SlavePlayer(Player):
@@ -101,7 +107,7 @@ class SlavePlayer(Player):
 	def base_time(self, value):
 		self.player.set_start_time(self.GST_CLOCK_TIME_NONE)
                 self._base_time = value
-                self._clock = Gst.NetClientClock(None, self._ip, self._port, self._base_time)
+                self._clock = GstNet.NetClientClock.new("clock", self._ip, self._port, self._base_time)
                 self.player.set_base_time(self._base_time)
                 self.player.use_clock(self._clock)
 
@@ -115,7 +121,7 @@ if __name__ == '__main__':
 		print("base_time={0}".format(player.base_time))
 	elif sys.argv[1] == 'slave':
 		player = SlavePlayer(sys.argv[2], sys.argv[3], 11111, int(sys.argv[4]))
-		slave.player.base_time = int(sys.argv[3])
+		player.base_time = int(sys.argv[4])
 	else:
 		player = Player(sys.argv[1])
 

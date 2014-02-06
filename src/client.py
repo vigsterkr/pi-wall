@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 
 import sys
-from player import Player
+from player import * 
 from gi.repository import GObject
 
 if __name__ == "__main__":
-	loop = GObject.MainLoop()
-	player = Player()
-	player.play("file:///home/pi/Park_720p.mp4")
-	player.loop = True
+	slave = SlaveThread(sys.argv[1], sys.argv[2])
+	slave.start()
 	
 	try:
-		loop.run()
+		GObject.MainLoop.run()
 	except KeyboardInterrupt:
+		slave.stop_player()
 		sys.exit(1)
 

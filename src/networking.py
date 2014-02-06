@@ -3,29 +3,58 @@
 import struct
 import time
 from socket import *
+import threading
 
-UDP_IP = "<broadcast>"
 UDP_PORT = 31337 
 
+class MasterServerThread(threading.Thread):
+    def __init__(self, master_player, bcast_addr):
+        super(MasterServerThread, self).__init__()
+        self.master_player = master_player
+	self.sock = socket(AF_INET, SOCK_DGRAM)
+        self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self.sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+	self.bcast_addr = bcast_addr
 
-def monitor_base_time():
-	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	sock.bind((UDP_IP, UDP_PORT))
-
+    def run(self):
 	while True:
-        	data, addr = sock.recvfrom(100)
-		base_time = struct.unpack('!Q',data)
-		print base_time
-		time.sleep(1)
+		msg = struct.pack("!Qi", self.master_player.base_time, self.master_player.port)
+        	self.sock.sendto(msg, (self.bcast_addr, UDP_PORT))
+        	time.sleep(1)
 
 
-def broadcast_base_time(base_time):
-	sock = socket(AF_INET, SOCK_DGRAM)
-	sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-	sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+class SlaveThread(threading.Thread):
+	def __init__(self, filepath, bcast_addr):
+		super(SlaveControllerThread, self).__init__()
+		self.filepath = filepath
 
-	while True:
-		msg = struct.pack("!Q", base_time)
-		sock.sendto(msg, ('10.0.10.255', UDP_PORT))
-		time.sleep(1)
+        	self.master_server = None
+        	self.slave = None
+        	self.running = True
+		
+		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.sock.bind((bcast_addr, UDP_PORT))
 	
+
+	def run(self):
+		while self.running:
+			data, addr = sock.recvfrom(100)
+			base_time, port = struct.unpack('!Qi', data)
+			ip = addr[0]
+			print base_time, ip, port
+			
+			if self.slave is None:
+				self.slave = SlavePlayer(self.filepath, ip, port, base_time) 
+			elif base_time != self.slave.base_time:
+				print("base time does not match, restarting...")
+				self.slave.stop()
+				self.slave = SlavePlayer(self.filepath, ip, port, base_time)
+
+
+			time.sleep(10)
+
+
+	def stop_player(self):
+		self.slave.stop()
+        	self.running = False
+
