@@ -25,7 +25,6 @@ class Player(object):
         self.GST_CLOCK_TIME_NONE = 18446744073709551615
 
         self._prerolling = True
-        self._audio_sink = 'pulsesink'
 
     def stop(self):
         self.player.set_state(Gst.State.NULL)
@@ -34,7 +33,8 @@ class Player(object):
         return Gst.parse_launch('filesrc location={0} ! '
                                 .format(self._filepath)
                                 + 'decodebin name=demux demux. \
-                                ! eglglessink demux. ! ' + self.audio_sink)
+                                ! eglglessink sync=true demux. \
+                                ! alsasink sync=true')
 
     def on_bus_msg(self, bus, msg):
         if msg is None:
@@ -67,14 +67,6 @@ class Player(object):
     @loop.setter
     def loop(self, value):
         self._loop = value
-
-    @property
-    def audio_sink(self):
-        return self._audio_sink
-
-    @audio_sink.setter
-    def audio_sink(self, value):
-        self._audio_sink = value
 
 
 class MasterPlayer(Player):
