@@ -1,5 +1,4 @@
 {
 "type":	"slave",
-"movie_file": "pathfile.mov",
-"bcast_addr": "10.0.10.255"
+"movie_file": "pathfile.mov"
 }

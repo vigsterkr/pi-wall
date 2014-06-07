@@ -3,62 +3,78 @@
 import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GstNet, GObject
+import time
 
-GObject.threads_init()
 Gst.init(None)
 
 
-class Player(object):
+class Player(GObject.GObject):
+    __gsignals__ = {
+        'finished': (GObject.SIGNAL_RUN_FIRST, None, ())
+    }
+
     def __init__(self, filepath):
+        GObject.GObject.__init__(self)
+
         self._filepath = filepath
-        self.player = self.get_pipeline()
+        self.loop = True
 
-        self.bus = self.player.get_bus()
+        # create pipeline
+        self.pipeline = Gst.Pipeline()
+        self.playbin = Gst.ElementFactory.make('playbin', None)
+        self.pipeline.add(self.playbin)
+        self.playbin.set_property('uri', 'file://{0}'.format(self._filepath))
+
+        # create & add sinks
+        audio_sink = Gst.ElementFactory.make('osxaudiosink', None)
+        video_sink = Gst.ElementFactory.make('osxvideosink', None)
+        self.playbin.set_property('audio-sink', audio_sink)
+        self.playbin.set_property('video-sink', video_sink)
+
+        self.bus = self.pipeline.get_bus()
+        self.watch_id = self.bus.connect("message", self.on_bus_msg)
         self.bus.add_signal_watch()
-        self.bus.connect("message", self.on_bus_msg)
 
-        self._loop = False
-
-        self.player.set_state(Gst.State.PAUSED)
+        self.pipeline.set_state(Gst.State.PAUSED)
 
         # bug ? as i get -1 for the standard
         self.GST_CLOCK_TIME_NONE = 18446744073709551615
 
-        self._prerolling = True
+    def release(self):
+        self.pipeline.remove(self.playbin)
+        del self.playbin
+        self.bus.remove_signal_watch()
+        self.bus.disconnect(self.watch_id)
+        del self.pipeline
+        del self.bus
+
+    def play(self):
+        self.pipeline.set_state(Gst.State.PLAYING)
 
     def stop(self):
-        self.player.set_state(Gst.State.NULL)
-
-    def get_pipeline(self):
-        return Gst.parse_launch('filesrc location={0} ! '
-                                .format(self._filepath)
-                                + 'decodebin name=demux demux. \
-                                ! eglglessink sync=true demux. \
-                                ! alsasink sync=true')
+        self.pipeline.set_state(Gst.State.NULL)
 
     def on_bus_msg(self, bus, msg):
         if msg is None:
             return
-        elif msg.type is Gst.MessageType.SEGMENT_DONE:
-            self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.SEGMENT, 0)
-        elif msg.type is Gst.MessageType.ASYNC_DONE:
-            if self._prerolling:
-                self.player.seek_simple(Gst.Format.TIME,
-                                        Gst.SeekFlags.FLUSH
-                                        | Gst.SeekFlags.SEGMENT, 0)
-                self.player.set_state(Gst.State.PLAYING)
-                self._prerolling = False
+        elif msg.type is Gst.MessageType.EOS:
+            if self.loop:
+                self.playbin.seek_simple(Gst.Format.TIME,
+                                         Gst.SeekFlags.FLUSH
+                                         | Gst.SeekFlags.KEY_UNIT, 0)
+                self.base_time = self.pipeline.get_clock().get_time()
+                self.pipeline.set_base_time(self.base_time)
+            self.emit('finished')
+
         elif msg.type is Gst.MessageType.ERROR:
             print "Got message of type ", msg.type
             print "Got message of src ", msg.src
             print "Got message of error ", msg.parse_error()
-            self.player.set_state(Gst.State.NULL)
+            self.pipeline.set_state(Gst.State.NULL)
 
-    def about_to_finish(self, playbin):
-        print "about to finish"
-        if self._loop:
-            print "adding to loop"
-            self.player.props.uri = self._last_uri
+    @property
+    def content(self):
+        return self._filepath
 
     @property
     def loop(self):
@@ -68,24 +84,32 @@ class Player(object):
     def loop(self, value):
         self._loop = value
 
+    @property
+    def base_time(self):
+        return self._base_time
+
+    @base_time.setter
+    def base_time(self, value):
+        self._base_time = value
+
 
 class MasterPlayer(Player):
     def __init__(self, filepath, port):
         super(MasterPlayer, self).__init__(filepath)
 
         self._port = port
-        self._clock = self.player.get_clock()
-        self.player.use_clock(self._clock)
-        self._clock_provider = GstNet.NetTimeProvider.new(self._clock,
+        clock = self.pipeline.get_clock()
+        self.pipeline.use_clock(clock)
+        self._clock_provider = GstNet.NetTimeProvider.new(clock,
                                                           None,
                                                           self._port)
-        self._base_time = self._clock.get_time()
-        self.player.set_start_time(self.GST_CLOCK_TIME_NONE)
-        self.player.set_base_time(self._base_time)
+        self.base_time = clock.get_time()
+        self.pipeline.set_start_time(self.GST_CLOCK_TIME_NONE)
+        self.pipeline.set_base_time(self.base_time)
 
-    @property
-    def base_time(self):
-        return self._base_time
+    def release(self):
+        del self._clock_provider
+        super(MasterPlayer, self).release()
 
     @property
     def port(self):
@@ -98,22 +122,18 @@ class SlavePlayer(Player):
         self._ip = ip
         self._port = port
         self.base_time = base_time
-
-    @property
-    def base_time(self):
-        return self._base_time
-
-    @base_time.setter
-    def base_time(self, value):
-        self.player.set_start_time(self.GST_CLOCK_TIME_NONE)
-        self._base_time = value
+        self.pipeline.set_start_time(self.GST_CLOCK_TIME_NONE)
         self._clock = GstNet.NetClientClock.new("clock",
                                                 self._ip,
                                                 self._port,
                                                 self._base_time)
-        self.player.set_base_time(self._base_time)
-        self.player.use_clock(self._clock)
+        self.pipeline.set_base_time(self.base_time)
+        self.pipeline.use_clock(self._clock)
+        self.loop = False
 
+    def update_base_time(self, base_time):
+        self.base_time = base_time
+        self.pipeline.set_base_time(self.base_time)
 
 if __name__ == '__main__':
     import sys
@@ -126,5 +146,7 @@ if __name__ == '__main__':
         player = SlavePlayer(sys.argv[2], sys.argv[3], 11111, int(sys.argv[4]))
     else:
         player = Player(sys.argv[1])
+
+    player.play()
 
     GObject.MainLoop().run()

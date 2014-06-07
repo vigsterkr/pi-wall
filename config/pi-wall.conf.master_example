@@ -1,6 +1,5 @@
 {
 "type":	"master",
 "movie_file": "pathfile.mov",
-"bcast_addr": "10.0.10.255",
 "master_port": 11111
 }
