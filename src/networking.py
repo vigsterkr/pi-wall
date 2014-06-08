@@ -150,10 +150,12 @@ class SlaveThread(threading.Thread):
         self.poller.register(self.sd_ref, zmq.POLLIN)
         while self.running:
             socks = dict(self.poller.poll())
-            if self.sd_ref.fileno() in socks and socks[self.sd_ref.fileno()] == zmq.POLLIN:
+            if (self.sd_ref.fileno() in socks and
+                    socks[self.sd_ref.fileno()] == zmq.POLLIN):
                 pybonjour.DNSServiceProcessResult(self.sd_ref)
 
-            if self.subscriber in socks and socks[self.subscriber] == zmq.POLLIN:
+            if (self.subscriber in socks and
+                    socks[self.subscriber] == zmq.POLLIN):
                 pdu = self.subscriber.recv_json()
                 current_base_time = int(pdu['base-time'])
                 if current_base_time != self.slave_player.base_time:

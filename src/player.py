@@ -3,7 +3,7 @@
 import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GstNet, GObject
-import time
+import platform
 
 Gst.init(None)
 
@@ -26,8 +26,15 @@ class Player(GObject.GObject):
         self.playbin.set_property('uri', 'file://{0}'.format(self._filepath))
 
         # create & add sinks
-        audio_sink = Gst.ElementFactory.make('osxaudiosink', None)
-        video_sink = Gst.ElementFactory.make('osxvideosink', None)
+        if platform.system() == 'Darwin':
+            audio_sink = Gst.ElementFactory.make('osxaudiosink', None)
+            video_sink = Gst.ElementFactory.make('osxvideosink', None)
+        elif platform.system() == 'Linux':
+            audio_sink = Gst.ElementFactory.make('alsasink', None)
+            video_sink = Gst.ElementFactory.make('eglglessink', None)
+
+        audio_sink.set_property('sync', True)
+        video_sink.set_property('sync', True)
         self.playbin.set_property('audio-sink', audio_sink)
         self.playbin.set_property('video-sink', video_sink)
 
@@ -137,7 +144,6 @@ class SlavePlayer(Player):
 
 if __name__ == '__main__':
     import sys
-    print sys.argv[1]
 
     if sys.argv[1] == 'master':
         player = MasterPlayer(sys.argv[2], 11111)
