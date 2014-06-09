@@ -74,9 +74,9 @@ class Player(GObject.GObject):
             self.emit('finished')
 
         elif msg.type is Gst.MessageType.ERROR:
-            print "Got message of type ", msg.type
-            print "Got message of src ", msg.src
-            print "Got message of error ", msg.parse_error()
+            print("Got message of type ", msg.type)
+            print("Got message of src ", msg.src)
+            print("Got message of error ", msg.parse_error())
             self.pipeline.set_state(Gst.State.NULL)
 
     @property

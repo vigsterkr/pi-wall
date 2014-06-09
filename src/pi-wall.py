@@ -13,7 +13,7 @@ if __name__ == "__main__":
             config_file = sys.argv[1]
         f = open(config_file)
     except IOError:
-        print "cannot open config file"
+        print("cannot open config file")
     else:
         config = json.load(f)
         f.close()
@@ -41,4 +41,4 @@ if __name__ == "__main__":
                 slave.stop()
                 sys.exit(1)
         else:
-            print "error type"
+            print("error type")
