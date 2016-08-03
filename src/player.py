@@ -31,7 +31,15 @@ class Player(GObject.GObject):
             video_sink = Gst.ElementFactory.make('osxvideosink', None)
         elif platform.system() == 'Linux':
             audio_sink = Gst.ElementFactory.make('alsasink', None)
-            video_sink = Gst.ElementFactory.make('eglglessink', None)
+            video_sink = Gst.ElementFactory.make('glimagesink', None)
+	    if video_sink is None:
+		# glimagesink not available trying to fallback to eglglessink
+		video_sink = Gst.ElementFactory.make('eglglessink', None)
+
+	if audio_sink is None:
+		raise Exception("audio_sink is not available!")
+        if video_sink is None:
+		raise Exception("video_sink is not available!")
 
         audio_sink.set_property('sync', True)
         video_sink.set_property('sync', True)
